@@ -4,4 +4,4 @@
 
 A small python interface to the Bayesian Analysis Toolkit (BAT.jl) https://github.com/bat/BAT.jl
 
-See test.ipynb for an example
+See [test.ipynb](https://github.com/philippeller/batty/blob/main/test.ipynb) for an example
