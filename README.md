@@ -1,4 +1,4 @@
-<h1> <img style="height:5em;" alt="batty" src="./batty_logo.svg"/> </h1> 
+<h1> <img style="height:5em;" alt="batty" src="https://raw.githubusercontent.com/philippeller/batty/main/batty_logo.svg"/> </h1> 
 
 # BAT to Python (batty)
 
