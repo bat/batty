@@ -11,8 +11,11 @@ except UnsupportedPythonError:
 from collections import namedtuple
 
 import numpy as np
+import awkward as ak
 
-BAT_result = namedtuple('BAT_result', ['samples', 'weight', 'logd'])
+Main.eval("using TypedTables")
+Main.eval("using ValueShapes")
+Main.eval("using ArraysOfArrays")
 
 class BAT_sampler():
     
@@ -35,7 +38,6 @@ class BAT_sampler():
         self.prior_specs = prior_specs
         if isinstance(self.prior_specs, dict):
             self.prior = ValueShapes.NamedTupleDist(**prior_specs)
-            self.result_tuple = namedtuple('result_tuple', prior_specs.keys())
         else:
             self.prior = prior_specs
         self.posterior = BAT.PosteriorDensity(self.llh, self.prior)
@@ -56,31 +58,23 @@ class BAT_sampler():
         
         Returns:
         --------
-        result : namedtuple('BAT_result', ['samples', 'weight', 'logd'])
-            Containing arrays of samples, weights, and llh values
+        result : awkward.Array
+            Containing arrays of v, weight, and logd
         
         '''
         Main.result = BAT.bat_sample(self.posterior, BAT.MCMCSampling(mcalg=self.mcalg, nsteps=int(nsteps), **kwargs))
         self._result = Main.result
         
         # define viws of arrays
+        result = {}
+        result['weight'] = Main.eval("Array(result.result.weight)")
+        result['logd'] = Main.eval("Array(result.result.logd)")
         if isinstance(self.prior_specs, dict):
-            samples = {}
-            for key in self.prior_specs.keys():
-                if isinstance(Main.eval('result.result.v.%s[1]'%key), list):
-                    samples[key] = Main.eval('convert(Array{Float64}, reduce(hcat, result.result.v.%s))'%key)                    
-                else:
-                    samples[key] = Main.eval('convert(Array{Float64}, result.result.v.%s)'%key)
-            samples = self.result_tuple(**samples)
+            v = Main.eval("Dict(pairs(map(c -> Array(flatview(unshaped.(c))), columns(result.result.v))))")
+            result['v'] = ak.Array({key:np.squeeze(v[key].T) for key in v.keys()})
         else:
-            if isinstance(Main.eval('result.result.v[1]'), list):
-                samples = Main.eval('convert(Array{Float64}, reduce(hcat, result.result.v))')
-            else:
-                samples = Main.eval('convert(Array{Float64}, result.result.v)')
-                    
-        weight = Main.eval('convert(Array{Float64}, result.result.weight)')
-        logd = Main.eval('convert(Array{Float64}, result.result.logd)')      
-    
-        self.result = BAT_result(samples, weight, logd)
-        
+            result['v'] = Main.eval("Array(result.result.v)")
+
+        self.result = ak.Array(result)
+            
         return self.result

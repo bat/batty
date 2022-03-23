@@ -7,7 +7,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='batty',
-    version='0.0.1',
+    version='0.0.4',
     packages=find_packages(),
     license='Apache 2.0',
     author='Philipp Eller',
