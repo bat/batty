@@ -8,8 +8,7 @@ except UnsupportedPythonError:
     jl = Julia(compiled_modules=False)
     from julia import BAT, DensityInterface, Distributions, ValueShapes, Main
 
-from collections import namedtuple
-
+import uncertainties
 import numpy as np
 import awkward as ak
 
@@ -19,7 +18,7 @@ Main.eval("using ArraysOfArrays")
 
 class BAT_sampler():
     
-    def __init__(self, llh, prior_specs, llh_args=(), mcalg=BAT.MetropolisHastings()):
+    def __init__(self, llh, prior_specs, llh_args=()):
         '''BAT_sampler Python wrapper
         
         Paramaters:
@@ -41,40 +40,65 @@ class BAT_sampler():
         else:
             self.prior = prior_specs
         self.posterior = BAT.PosteriorDensity(self.llh, self.prior)
-        self.mcalg = mcalg
-        self._result = None
         self.result = None
+        self.sampled_density = None
         
-    def run(self, nsteps=1e5, **kwargs):
+    def sample(self, strategy=BAT.MCMCSampling()):
         '''
         Run the Sampler
         
         Paramaters:
         -----------
-        nsteps : int
-            Number of MCMC sampling steps
-        kwargs : dict (optional)
-            additional keyword arguments to the sampler
+        strategy : BAT sampling algorithm
         
         Returns:
         --------
-        result : awkward.Array
+        samples : awkward.Array
             Containing arrays of v, weight, and logd
-        
         '''
-        Main.result = BAT.bat_sample(self.posterior, BAT.MCMCSampling(mcalg=self.mcalg, nsteps=int(nsteps), **kwargs))
-        self._result = Main.result
+        
+        strategy
+        
+        Main.samples = BAT.bat_sample(self.posterior, strategy)
+        self._samples = Main.samples
+        
+        Main.posterior = self.posterior
+        self.sampled_density = Main.eval("BAT.SampledDensity(posterior, samples.result)")
         
         # define viws of arrays
-        result = {}
-        result['weight'] = Main.eval("Array(result.result.weight)")
-        result['logd'] = Main.eval("Array(result.result.logd)")
+        samples = {}
+        samples['weight'] = Main.eval("Array(samples.result.weight)")
+        samples['logd'] = Main.eval("Array(samples.result.logd)")
         if isinstance(self.prior_specs, dict):
-            v = Main.eval("Dict(pairs(map(c -> Array(flatview(unshaped.(c))), columns(result.result.v))))")
-            result['v'] = ak.Array({key:np.squeeze(v[key].T) for key in v.keys()})
+            v = Main.eval("Dict(pairs(map(c -> Array(flatview(unshaped.(c))), columns(samples.result.v))))")
+            samples['v'] = ak.Array({key:np.squeeze(v[key].T) for key in v.keys()})
         else:
-            result['v'] = Main.eval("Array(result.result.v)")
+            samples['v'] = Main.eval("Array(samples.result.v)")
 
-        self.result = ak.Array(result)
+        self.samples = ak.Array(samples)
             
-        return self.result
+        return self.samples
+    
+    def integrate(self, strategy=BAT.BridgeSampling(), use_samples=True):
+        '''
+        Run an integration algorithm on the posterior density
+        
+        Parameters:
+        -----------
+        strategy : BAT intergration algorithm
+            such as BAT.AHMIntegration, BAT.BridgeSampling
+        use_samples : bool
+            whether to (try to) use existig samples from having run `.sample()`
+            
+        Returns:
+        --------
+        result : ufloat
+            Integral estimate with uncertainty  
+        '''
+        if use_samples and self.sampled_density is not None:
+            integral = BAT.bat_integrate(self.sampled_density, strategy)
+        else:
+            integral = BAT.bat_integrate(self.posterior, strategy)
+        Main.integral = integral
+        return uncertainties.ufloat(Main.eval("integral.result.val"), Main.eval("integral.result.err"))
+        

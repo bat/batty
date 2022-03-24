@@ -22,5 +22,7 @@ setup(
     install_requires=[
         'numpy',
         'julia',
+        'uncertainties',
+        'awkward',
     ],
 )
