@@ -11,6 +11,9 @@ except UnsupportedPythonError:
 import uncertainties
 import numpy as np
 import awkward as ak
+from tqdm import tqdm
+import pygtc
+import corner as corner_plot
 
 Main.eval("using TypedTables")
 Main.eval("using ValueShapes")
@@ -18,7 +21,7 @@ Main.eval("using ArraysOfArrays")
 
 class BAT_sampler():
     
-    def __init__(self, llh, prior_specs, llh_args=()):
+    def __init__(self, llh, prior_specs, llh_args=(), progress_bar=False):
         '''BAT_sampler Python wrapper
         
         Paramaters:
@@ -29,11 +32,23 @@ class BAT_sampler():
             The prior specifications
         llh_args : tuple
             additional arguments to the llh function (optional)
-        mcalg : BAT MC algorithm (optional)
+        progress_bar : bool
+            whether to show progress bar
 
         
         '''
-        self.llh = DensityInterface.logfuncdensity(lambda x : llh(x, *llh_args))
+        self.progress_bar = progress_bar
+        if self.progress_bar:
+            self.pbar = tqdm(disable=True)
+            def fun(x):
+                l = llh(x, *llh_args)
+                self.pbar.set_description('llh at {:10.4f}'.format(l))
+                self.pbar.update(1)
+                return l
+            self.llh = DensityInterface.logfuncdensity(fun)
+
+        else:
+            self.llh = DensityInterface.logfuncdensity(lambda x : llh(x, *llh_args))
         self.prior_specs = prior_specs
         if isinstance(self.prior_specs, dict):
             self.prior = ValueShapes.NamedTupleDist(**prior_specs)
@@ -56,9 +71,8 @@ class BAT_sampler():
         samples : awkward.Array
             Containing arrays of v, weight, and logd
         '''
-        
-        strategy
-        
+        if self.progress_bar:
+            self.pbar.__init__(position=0, mininterval=0.1, miniters=100)        
         Main.samples = BAT.bat_sample(self.posterior, strategy)
         self._samples = Main.samples
         
@@ -101,4 +115,56 @@ class BAT_sampler():
             integral = BAT.bat_integrate(self.posterior, strategy)
         Main.integral = integral
         return uncertainties.ufloat(Main.eval("integral.result.val"), Main.eval("integral.result.err"))
+    
+    def get_arrays_for_plotting(self):
+        if len(self.samples.v.fields) > 0:        
+            s = [self.samples.v[var].to_numpy() for var in self.samples.v.fields]
+            labels = []
+            vs = []
+            for v, n in zip(s, self.samples.v.fields):
+                if v.ndim == 1:
+                    labels.append(n)
+                    vs.append(v[:, np.newaxis])
+                elif v.ndim == 2:
+                    for i in range(s[1].shape[1]):
+                        labels.append('%s[%i]'%(n, i))
+                    vs.append(v)
+                else:
+                    raise Exception("Cannot deal with ndim=%i array `%s`"%(v.ndim, n))
+            vs = np.hstack(vs)
+            
+        else:
+            vs = self.samples.v.to_numpy()
+            if vs.ndim == 1:
+                vs = vs[:, np.newaxis]
+            labels=None
+            
+        return vs, labels
+    
+    def gtc(self, **kwargs):
+        vs, labels = self.get_arrays_for_plotting()
+        paramNames = kwargs.pop('paramNames', labels)
+        
+        return pygtc.plotGTC(
+            chains=vs, 
+            weights=self.samples.weight.to_numpy(),
+            paramNames=paramNames,
+            **kwargs,
+        )
+    
+    gtc.__doc__ = pygtc.plotGTC.__doc__
+   
+
+    def corner(self, **kwargs):
+        vs, l = self.get_arrays_for_plotting()
+        labels = kwargs.pop('labels', l)
+    
+        return corner_plot.corner(vs,
+                      weights=self.samples.weight.to_numpy(),
+                      labels=labels,
+                      **kwargs,
+                      )
+    
+    corner.__doc__ = corner_plot.corner.__doc__
+
         
