@@ -30,18 +30,22 @@ import matplotlib.pyplot as plt
 from batty import BAT_sampler, BAT, Distributions
 ```
 
-
-```python
-sampler = BAT_sampler(llh=lambda x : -0.5 * x**2, prior_specs=Distributions.Uniform(-3, 3))
-
-sampler.sample();
-
-sampler.corner();
-```
-
     /mnt/c/Users/peller/work/batty/batty.py:6: UserWarning: Not able to use compiled modules, resulting in (very) slow import
      See https://pyjulia.readthedocs.io/en/latest/troubleshooting.html
       warnings.warn("Not able to use compiled modules, resulting in (very) slow import\n See https://pyjulia.readthedocs.io/en/latest/troubleshooting.html")
+
+
+
+```python
+sampler = BAT_sampler(llh=lambda x : -0.5 * x**2, prior_specs=Distributions.Uniform(-3, 3))
+sampler.sample();
+sampler.corner();
+```
+
+
+    
+![png](https://raw.githubusercontent.com/philippeller/batty/main/README_files/README_3_0.png)
+    
 
 
 
@@ -52,7 +56,7 @@ sampler.integrate()
 
 
 
-    0.416747877274376+/-0.00021004447293448817
+    0.4165591088238079+/-0.00020607405882794568
 
 
 
@@ -74,7 +78,7 @@ sampler.integrate(strategy=BAT.AHMIntegration())
 
 
 
-    0.4189844836634516+/-0.0015790934281673487
+    0.41993468380372745+/-0.0015153686310618321
 
 
 
@@ -88,11 +92,11 @@ sampler.integrate(strategy=BAT.BridgeSampling())
 
 
 
-    0.41675559744691054+/-0.0002100721115029865
+    0.4166724726365416+/-0.0002060289597245534
 
 
 
-### MCMC Sampling
+### MCMC Sampling:
 
 
 ```python
@@ -134,6 +138,8 @@ results['Sobol Quasi Random Numbers'] = sampler.sample(strategy=BAT.SobolSampler
 results['Grid Points'] = sampler.sample(strategy=BAT.GridSampler(ppa=1000))
 ```
 
+Plotting the different results:
+
 
 ```python
 fig = plt.figure(figsize=(9,6))
@@ -146,19 +152,19 @@ plt.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7f9650197dc0>
+    <matplotlib.legend.Legend at 0x7f05724e28e0>
 
 
 
 
     
-![png](https://raw.githubusercontent.com/philippeller/batty/main/README_files/README_21_1.png)
+![png](https://raw.githubusercontent.com/philippeller/batty/main/README_files/README_22_1.png)
     
 
 
 # Specifying Priors and Likelihoods
 
-Priors are specified via Julia Distributions, multiple Dimensions can be defined via a dict, where the key is the dimension name
+Priors are specified via Julia `Distributions`, multiple Dimensions can be defined via a `dict`, where the `key` is the dimension name and the value the distribution
 
 
 ```python
@@ -166,8 +172,8 @@ s = np.array([[0.25, 0.4], [0.9, 0.75]])
 prior_specs = {'a' : Distributions.Uniform(-3,3), 'b' : Distributions.MvNormal([1,1], s@s.T)}
 ```
 
-The log-likelihood (llh) can be any python callable, that returns the log-likelihood values. The first argument to the function is the object with paramneter values, here `x`. If the prior is simple (i.e. like in the example in the beginning, `x` is directly the parameter value). If the prior is specified via a dict, then `x` contains a field per parameter with the value.
-Any additional args to the llh can be specified in the sampler, such as here `d` for data:
+The log-likelihood (`llh`) can be any python callable, that returns the log-likelihood values. The first argument to the function is the object with paramneter values, here `x`. If the prior is simple (i.e. like in the example in the beginning, `x` is directly the parameter value). If the prior is specified via a `dict`, then `x` contains a field per parameter with the value.
+Any additional `args` to the llh can be given in the sampler, such as here `d` for data:
 
 
 ```python
@@ -192,7 +198,7 @@ Let us generate a few samples:
 sampler.sample(strategy=BAT.MCMCSampling(nsteps=10_000, nchains=2));
 ```
 
-    llh at     2.0605: : 35132it [01:32, 306.96it/s]     
+    llh at   -11.0996: : 35132it [01:46, 377.76it/s]     
 
 ### Some interface to plotting tools are available
 
@@ -209,7 +215,7 @@ sampler.gtc(figureSize=8, customLabelFont={'size':14}, customTickFont={'size':10
 
 
     
-![png](https://raw.githubusercontent.com/philippeller/batty/main/README_files/README_31_1.png)
+![png](https://raw.githubusercontent.com/philippeller/batty/main/README_files/README_32_1.png)
     
 
 
@@ -222,7 +228,7 @@ sampler.corner(color='green');
 
 
     
-![png](https://raw.githubusercontent.com/philippeller/batty/main/README_files/README_33_0.png)
+![png](https://raw.githubusercontent.com/philippeller/batty/main/README_files/README_34_0.png)
     
 
 
