@@ -118,10 +118,10 @@ class BAT_sampler():
     
     def get_arrays_for_plotting(self):
         if len(self.samples.v.fields) > 0:        
-            s = [self.samples.v[var].to_numpy() for var in self.samples.v.fields]
+            s = [self.samples.v[var].to_numpy() for var in self.prior_specs.keys()]
             labels = []
             vs = []
-            for v, n in zip(s, self.samples.v.fields):
+            for v, n in zip(s, self.prior_specs.keys()):
                 if v.ndim == 1:
                     labels.append(n)
                     vs.append(v[:, np.newaxis])
