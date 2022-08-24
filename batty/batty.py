@@ -15,8 +15,8 @@ except UnsupportedPythonError:
 
 import uncertainties
 import numpy as np
+import os
 import awkward as ak
-from tqdm import tqdm
 import pygtc
 import corner as corner_plot
 
@@ -24,36 +24,64 @@ Main.eval("using TypedTables")
 Main.eval("using ValueShapes")
 Main.eval("using ArraysOfArrays")
 
+path = os.path.dirname(os.path.abspath(__file__))
+
+Main.eval('include("%s/bat_pythoncall.jl")'%path)
 
 class BAT_sampler:
-    def __init__(self, llh, prior_specs, llh_args=(), progress_bar=False):
+    def __init__(self, prior_specs, llh, grad=None, llh_and_grad=None, llh_args=()):
         """BAT_sampler Python wrapper
 
         Paramaters:
         -----------
-        llh : callable
-            The likelihood function
         prior_specs : BAT prior, or dictionary thereof
             The prior specifications
+        llh : callable
+            The likelihood function
+        grad : callable (optional)
+            function returning the gradients of llh
+        llh_and_grad : callable (optional)
+            function returning the llh and gradients in one go
         llh_args : tuple
             additional arguments to the llh function (optional)
-        progress_bar : bool
-            whether to show progress bar
         """
-        self.progress_bar = progress_bar
-        if self.progress_bar:
-            self.pbar = tqdm(disable=True)
 
-            def fun(x):
-                l = llh(x, *llh_args)
-                self.pbar.set_description("llh at {:10.4f}".format(l))
-                self.pbar.update(1)
-                return l
+        assert llh is not None or llh_and_grad is not None, "Neither llh nor llh_and_grad were supplied"
 
-            self.llh = DensityInterface.logfuncdensity(fun)
+        assert grad is None or llh_and_grad is None, "grad AND llh_and_grad were supplied, please choose only one or the other"
 
+        if len(llh_args) == 0:
+            if grad is not None:
+                my_llh_and_grad = lambda x: (llh(x), grad(x))
+                my_llh = llh
+            elif llh_and_grad is not None:
+                my_llh_and_grad = llh_and_grad
+                my_llh = lambda x: llh_and_grad(x)[0]
+            else:
+                my_llh_and_grad = None
+                my_llh = llh
+
+            if my_llh_and_grad is None:
+                self.llh = DensityInterface.logfuncdensity(my_llh)
+            else:
+                self.llh = Main.PyCallDensityWithGrad(my_llh, my_llh_and_grad)
+        
         else:
-            self.llh = DensityInterface.logfuncdensity(lambda x: llh(x, *llh_args))
+            if grad is not None:
+                my_llh_and_grad = lambda x: (llh(x, *llh_args), grad(x, *llh_args))
+                my_llh = lambda x: llh(x, *llh_args)
+            elif llh_and_grad is not None:
+                my_llh_and_grad = lambda x: llh_and_grad(x, *llh_args)
+                my_llh = lambda x: llh_and_grad(x, *llh_args)[0]
+            else:
+                my_llh_and_grad = None
+                my_llh = lambda x: llh(x, *llh_args)
+
+            if my_llh_and_grad is None:
+                self.llh = DensityInterface.logfuncdensity(my_llh)
+            else:
+                self.llh = Main.PyCallDensityWithGrad(my_llh, my_llh_and_grad)
+
         self.prior_specs = prior_specs
         if isinstance(self.prior_specs, dict):
             self.prior = ValueShapes.NamedTupleDist(**prior_specs)
@@ -77,8 +105,6 @@ class BAT_sampler:
         samples : awkward.Array
             Containing arrays of v, weight, and logd
         """
-        if self.progress_bar:
-            self.pbar.__init__(position=0, mininterval=0.1, miniters=100)
         Main.samples = BAT.bat_sample(self.posterior, strategy)
         self._samples = Main.samples
 
