@@ -4,6 +4,11 @@
 
 A small python interface to the Bayesian Analysis Toolkit (BAT.jl) https://github.com/bat/BAT.jl
 
+
+* Please check out the minimal example to get started [below](#minimal-example)
+* To understand how to define a prior + likelihood, please read [this](#specifying-priors-and-likelihoods)
+* For experimental support of gradients, see [this](#hmc-with-gradients)
+
 # Quick Start
 
 ## Installation
@@ -111,7 +116,7 @@ plt.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7f15e5fff730>
+    <matplotlib.legend.Legend at 0x7f069fcd5ee0>
 
 
 
@@ -223,3 +228,8 @@ sampler.corner();
 ![png](https://raw.githubusercontent.com/philippeller/batty/main/README_files/README_35_0.png)
     
 
+
+
+```python
+
+```
