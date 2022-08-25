@@ -12,7 +12,6 @@ jl.seval("using BAT")
 jl.seval("using Distributions")
 jl.seval("using DensityInterface")
 jl.seval("using ChainRulesCore")
-jl.seval("using ValueShapes")
 jl.seval("using ArraysOfArrays")
 jl.seval("using TypedTables")
 jl.seval("using ValueShapes")
@@ -35,6 +34,7 @@ class BAT_sampler:
         llh : callable
             The likelihood function
         grad : callable (optional)
+            print({n:dist for (n,dist) in zip(range(len(self.prior_specs)), self.prior_specs)})
             function returning the gradients of llh
         llh_and_grad : callable (optional)
             function returning the llh and gradients in one go
