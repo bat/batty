@@ -26,4 +26,5 @@ setup(
         "tqdm",
         "corner",
     ],
+    package_data={'': ['batty/pybat.jl']}
 )
