@@ -7,12 +7,12 @@ with open(path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="batty",
-    version="0.1.0",
+    version="0.1.1",
     packages=find_packages(),
     license="MIT",
     author="Philipp Eller",
     author_email="peller.phys@gmail.com",
-    url="https://github.com/philippeller/batty",
+    url="https://github.com/BAT/batty",
     description="BAT to Python",
     long_description=long_description,
     long_description_content_type="text/markdown",

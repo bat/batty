@@ -3,6 +3,7 @@ import numpy as np
 import awkward as ak
 import pygtc
 import corner as corner_plot
+from collections import namedtuple
 from pathlib import Path
 import os.path
 
@@ -79,11 +80,17 @@ class BAT_sampler:
 
         self.prior_specs = prior_specs
         if isinstance(self.prior_specs, dict):
-            self.prior = jl.NamedTupleDist(**prior_specs)
+            self.shape = namedtuple('shape', self.prior_specs) 
+            self.prior = jl.NamedTupleDist(self.shape(**prior_specs))
         elif isinstance(self.prior_specs, list):
-            self.prior = jl.unshaped(jl.NamedTupleDist(**{str(n):dist for n,dist in zip(range(len(self.prior_specs)), self.prior_specs)}))
+            # Nasty work-around
+            named_prior_dict = {'p'+str(n):dist for n,dist in zip(range(len(self.prior_specs)), self.prior_specs)}
+            tup = namedtuple('test', named_prior_dict)
+            self.prior = jl.unshaped(jl.NamedTupleDist(tup(**named_prior_dict)))
+            self.shape = len(self.prior)
         else:
             self.prior = prior_specs
+            self.shape = 1
         self.posterior = jl.BAT.PosteriorMeasure(self.llh, self.prior)
         self.samples = None
         self._samples = None
@@ -116,6 +123,9 @@ class BAT_sampler:
         self.samples = ak.Array(samples)
 
         return self.samples
+
+    def findmode(self, **kwargs):
+        return jl.BAT.bat_findmode(self.posterior, **kwargs)
 
     def integrate(self, strategy=BAT.BridgeSampling(), use_samples=True):
         """
