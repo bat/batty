@@ -124,8 +124,8 @@ class BAT_sampler:
 
         return self.samples
 
-    def findmode(self, **kwargs):
-        return jl.BAT.bat_findmode(self.posterior, **kwargs)
+    def findmode(self, *args, **kwargs):
+        return jl.BAT.bat_findmode(self.posterior, *args, **kwargs)
 
     def integrate(self, strategy=BAT.BridgeSampling(), use_samples=True):
         """
