@@ -17,9 +17,9 @@ There are two parts to an installation, one concerning the python side, and one 
 
 * Python: `pip install batty`
 
-* Julia: `import Pkg; Pkg.add.(["PyJulia", "DensityInterface", "Distributions", "ValueShapes", "TypedTables", "ArraysOfArrays", "ChainRulesCore", "BAT"])`
+* Julia: `import Pkg; Pkg.add(["PyJulia", "DensityInterface", "Distributions", "ValueShapes", "TypedTables", "ArraysOfArrays", "ChainRulesCore", "BAT"])`
 
-## Minimal Example
+sampler.findmodeExample
 
 The code below is showing a minimal example:
 * using a gaussian likelihood and a uniform prior
@@ -39,6 +39,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 %matplotlib inline
 from batty import BAT_sampler, BAT, Distributions, jl
+import juliacall
 ```
 
 
@@ -116,7 +117,7 @@ plt.legend()
 
 
 
-    <matplotlib.legend.Legend at 0x7f069fcd5ee0>
+    <matplotlib.legend.Legend at 0x7f9c3a22cf10>
 
 
 
@@ -151,9 +152,9 @@ Or alternatively *without* parameter names (this will result in a flat vector):
 
 
 ```python
-# prior_specs = [Distributions.Uniform(-3,3), Distributions.MvNormal(np.array([1.,1.]), jl.Array(s@s.T))]
-# def llh(x, d):
-#     return -0.5 * ((x[1] - d[0])**2 + (x[2] - d[1])**2/4) - x[0]
+prior_specs = [Distributions.Uniform(-3,3), Distributions.MvNormal(np.array([1.,1.]), jl.Array(s@s.T))]
+def llh(x, d):
+    return -0.5 * ((x[1] - d[0])**2 + (x[2] - d[1])**2/4) - x[0]
 ```
 
 
@@ -182,7 +183,6 @@ sampler.sample(strategy=BAT.MCMCSampling(nsteps=10_000, nchains=2));
 sampler.gtc(figureSize=8, customLabelFont={'size':14}, customTickFont={'size':10});
 ```
 
-    findfont: Font family ['Arial'] not found. Falling back to DejaVu Sans.
     findfont: Font family ['Arial'] not found. Falling back to DejaVu Sans.
 
 
@@ -231,5 +231,24 @@ sampler.corner();
 
 
 ```python
-
+sampler.findmode()
 ```
+
+
+
+
+    (result = [5.210924046524456e-5], result_trafo = [5.210924046524456e-5], trafo = identity ∘ identity, trace_trafo = NamedTuple{(:v,), Tuple{Vector{Float64}}}[(v = [-2.1581073465187135],), (v = [-2.1581073465187135],), (v = [1.004053673259357],), (v = [0.2135134183148394],), (v = [0.01587835457870998],), (v = [0.01587835457870998],), (v = [0.003526163095201894],), (v = [0.00043811522432487225],), (v = [-0.00033389674339438314],), (v = [-0.0001408937514645693],)], info = Results of Optimization Algorithm
+     * Algorithm: Nelder-Mead
+     * Starting Point: [-2.1581073465187135]
+     * Maximizer: [5.210924046524456e-5]
+     * Maximum: -1.791759e+00
+     * Iterations: 9
+     * Convergence: true
+       *  √(Σ(yᵢ-ȳ)²)/n < 1.0e-08: true
+       * Reached Maximum Number of Iterations: false
+     * Objective Calls: 21, optargs = (algorithm = NelderMeadOpt{DoNotTransform, InitFromTarget}
+      trafo: DoNotTransform DoNotTransform()
+      init: InitFromTarget InitFromTarget()
+    ,), kwargs = NamedTuple())
+
+
