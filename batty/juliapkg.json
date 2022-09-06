@@ -17,7 +17,6 @@
             "uuid" : "b429d917-457f-4dbc-8f4c-0cc954292b1d"
         },
         "PythonCall" : {
-            "rev" : "main",
             "uuid" : "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
         },
         "StatsBase" : {
