@@ -68,6 +68,26 @@ function DensityInterface.logdensityof(density::Union{PyCallDensity, PyCallDensi
 end
 
 
+function ChainRulesCore.rrule(::typeof(DensityInterface.logdensityof), density::PyCallDensityWithGrad, x::Real)
+    logd, gradlogd = GC.@preserve x try
+        lock(g_pythoncall_lock)
+        py_x = Py(x)
+        pyconvert(Tuple{Float64,Float64}, density.valgradlogf(py_x))::Tuple{Float64,Float64}
+    finally
+        unlock(g_pythoncall_lock)
+    end
+    @assert logd isa Real
+
+    function pcdwg_pullback(thunked_ΔΩ)
+        ΔΩ = ChainRulesCore.unthunk(thunked_ΔΩ)
+        @assert ΔΩ isa Real
+        tangent = gradlogd * ΔΩ
+        (NoTangent(), ZeroTangent(), tangent)
+    end
+
+    return logd, pcdwg_pullback
+end
+
 function ChainRulesCore.rrule(::typeof(DensityInterface.logdensityof), density::PyCallDensityWithGrad, x::AbstractArray{<:Real})
     logd, gradlogd = GC.@preserve x try
         lock(g_pythoncall_lock)
@@ -88,26 +108,27 @@ function ChainRulesCore.rrule(::typeof(DensityInterface.logdensityof), density::
     return logd, pcdwg_pullback
 end
 
-# function ChainRulesCore.rrule(::typeof(DensityInterface.logdensityof), density::PyCallDensityWithGrad, x::NamedTuple)
-#     logd, gradlogd = GC.@preserve x try
-#         lock(g_pythoncall_lock)
-#         py_x = Py(x)
-#         res = density.valgradlogf(py_x)
-#         pyconvert(Tuple{Float64,Vector{Float64}}, res)::Tuple{Float64,Vector{Float64}}
-#     finally
-#         unlock(g_pythoncall_lock)
-#     end
-#     @assert logd isa Real
+function ChainRulesCore.rrule(::typeof(DensityInterface.logdensityof), density::PyCallDensityWithGrad, x::NamedTuple)
+    logd, gradlogd = GC.@preserve x try
+        lock(g_pythoncall_lock)
+        py_x = Py(x)
+        res = density.valgradlogf(py_x)
+        pyconvert(Tuple{Float64,NamedTuple}, res)::Tuple{Float64,NamedTuple}
+    finally
+        unlock(g_pythoncall_lock)
+    end
+    @assert logd isa Real
 
-#     function pcdwg_pullback(thunked_ΔΩ)
-#         ΔΩ = ChainRulesCore.unthunk(thunked_ΔΩ)
-#         @assert ΔΩ isa Real
-#         tangent = gradlogd * ΔΩ
-#         (NoTangent(), ZeroTangent(), tangent)
-#     end
+    function pcdwg_pullback(thunked_ΔΩ)
+        ΔΩ = ChainRulesCore.unthunk(thunked_ΔΩ)
+        @assert ΔΩ isa Real
+        tangent = map(x -> x * ΔΩ, gradlogd)
+        (NoTangent(), ZeroTangent(), tangent)
+    end
 
-#     return logd, pcdwg_pullback
-# end
+    return logd, pcdwg_pullback
+end
+
 
 BAT.vjp_algorithm(density::PyCallDensityWithGrad) = BAT.ZygoteAD()
 
