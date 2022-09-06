@@ -1,0 +1,33 @@
+{
+    "packages" : {
+        "ArraysOfArrays" : {
+            "uuid" : "65a8f2f4-9b39-5baf-92e2-a9cc46fdf018"
+        },
+        "BAT" : {
+            "rev" : "main",
+            "uuid" : "c0cd4b16-88b7-57fa-983b-ab80aecada7e"
+        },
+        "ChainRulesCore" : {
+            "uuid" : "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+        },
+        "Distributions" : {
+            "uuid" : "31c24e10-a181-5473-b8eb-7969acd0382f"
+        },
+        "DensityInterface" : {
+            "uuid" : "b429d917-457f-4dbc-8f4c-0cc954292b1d"
+        },
+        "PythonCall" : {
+            "rev" : "main",
+            "uuid" : "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
+        },
+        "StatsBase" : {
+            "uuid" : "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+        },
+        "ValueShapes" : {
+            "uuid" : "136a8f8c-c49b-4edb-8b98-f3d64d48be8f"
+        },
+        "Zygote" : {
+            "uuid" : "e88e6eb3-aa80-5325-afca-941959d7151f"
+        }
+    }
+}
